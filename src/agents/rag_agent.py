@@ -33,18 +33,31 @@ def rag_agent(state: SupportState) -> dict:
         | get_llm()
     )
 
+    from utils.helpers import (
+        add_trace,
+        ticket_text,
+        normalize_llm_content,
+    )
+
     result = chain.invoke(
         {
             "ticket": ticket_text(ticket),
-            "conversation": json.dumps(recent, ensure_ascii=False),
+            "conversation": json.dumps(
+                recent,
+                ensure_ascii=False,
+            ),
             "context": documents_to_context(docs),
         }
+    )
+
+    rag_draft = normalize_llm_content(
+        result.content
     )
 
     return {
         "retrieval_query": query,
         "retrieved_documents": docs,
-        "rag_draft": result.content,
+        "rag_draft": rag_draft,
         "trace": add_trace(
             state,
             "rag_agent",
@@ -52,3 +65,23 @@ def rag_agent(state: SupportState) -> dict:
             f"retrieved={len(docs)}",
         ),
     }
+
+    # result = chain.invoke(
+    #     {
+    #         "ticket": ticket_text(ticket),
+    #         "conversation": json.dumps(recent, ensure_ascii=False),
+    #         "context": documents_to_context(docs),
+    #     }
+    # )
+    #
+    # return {
+    #     "retrieval_query": query,
+    #     "retrieved_documents": docs,
+    #     "rag_draft": result.content,
+    #     "trace": add_trace(
+    #         state,
+    #         "rag_agent",
+    #         "retrieve_and_draft",
+    #         f"retrieved={len(docs)}",
+    #     ),
+    # }

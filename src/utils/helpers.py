@@ -71,6 +71,40 @@ def add_trace(
     )
     return trace
 
+def normalize_llm_content(content) -> str:
+    """
+    Convert LangChain model content into plain text.
+
+    Supports:
+    - OpenAI-style string content
+    - Gemini/LangChain content block lists
+    - dict-based text blocks
+    """
+
+    if content is None:
+        return ""
+
+    if isinstance(content, str):
+        return content.strip()
+
+    if isinstance(content, list):
+        parts = []
+
+        for block in content:
+            if isinstance(block, str):
+                parts.append(block)
+
+            elif isinstance(block, dict):
+                # Common LangChain/Gemini text block
+                text = block.get("text")
+
+                if text:
+                    parts.append(str(text))
+
+        return "\n".join(parts).strip()
+
+    return str(content).strip()
+
 
 def log_agent_action(agent: str, action: str, details: dict[str, Any]) -> None:
     logger.info("[%s] %s: %s", agent, action, details)

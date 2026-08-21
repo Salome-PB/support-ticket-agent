@@ -23,15 +23,52 @@ ESCALATION_SCRIPT = (
 )
 
 
-def auto_resolve_response(state: SupportState) -> dict:
-    draft = state["rag_draft"].strip()
+# def auto_resolve_response(state: SupportState) -> dict:
+#     draft = state["rag_draft"].strip()
+#     if "[draft" not in draft.lower():
+#         draft += "\n\n[Draft — pending human approval]"
+#
+#     return {
+#         "final_draft": draft,
+#         "trace": add_trace(
+#             state, "response_agent", "auto_resolve_draft", "draft prepared"
+#         ),
+#    }
+
+from utils.helpers import (
+    add_trace,
+    ticket_text,
+    normalize_llm_content,
+)
+
+
+def auto_resolve_response(
+    state: SupportState,
+) -> dict:
+
+    draft = normalize_llm_content(
+        state.get("rag_draft")
+    )
+
+    if not draft:
+        draft = (
+            "I could not generate a grounded response "
+            "from the available knowledge base."
+        )
+
     if "[draft" not in draft.lower():
-        draft += "\n\n[Draft — pending human approval]"
+        draft += (
+            "\n\n"
+            "[Draft — pending human approval]"
+        )
 
     return {
         "final_draft": draft,
         "trace": add_trace(
-            state, "response_agent", "auto_resolve_draft", "draft prepared"
+            state,
+            "response_agent",
+            "auto_resolve_draft",
+            "draft prepared",
         ),
     }
 
@@ -67,14 +104,38 @@ def ask_more_info_response(state: SupportState) -> dict:
         | get_llm()
     )
 
+    # result = chain.invoke(
+    #     {
+    #         "ticket": ticket_text(state["ticket"]),
+    #         "context": documents_to_context(state.get("retrieved_documents", [])),
+    #     }
+    # )
     result = chain.invoke(
         {
-            "ticket": ticket_text(state["ticket"]),
-            "context": documents_to_context(state.get("retrieved_documents", [])),
+            "ticket": ticket_text(
+                state["ticket"]
+            ),
+            "context": documents_to_context(
+                state.get(
+                    "retrieved_documents",
+                    [],
+                )
+            ),
         }
     )
 
-    draft = result.content.strip()
+    draft = normalize_llm_content(
+        result.content
+    )
+
+    if "[draft" not in draft.lower():
+        draft += (
+            "\n\n"
+            "[Draft — pending human approval]"
+        )
+
+    #draft = result.content.strip()
+    draft = normalize_llm_content(result.content)
     if "[draft" not in draft.lower():
         draft += "\n\n[Draft — pending human approval]"
 
