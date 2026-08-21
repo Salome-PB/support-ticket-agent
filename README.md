@@ -151,3 +151,34 @@ audit_log
   ↓
 END
 ```
+## Setup
+Example:
+
+```bat
+python -m venv .venv
+.venv\Scripts\activate
+python -m pip install -r requirements.txt
+copy .env.template .env
+```
+
+Edit `.env` in the project root:
+
+```text
+OPENAI_API_KEY=...
+OPENAI_MODEL=...
+```
+
+## Run the interactive queue
+
+```bat
+python main.py
+```
+
+## Test in notebook
+
+Open:
+
+`notebooks/langgrpah_flow_demo.ipynb`
+
+Run the cells in order.
+```
