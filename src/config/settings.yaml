@@ -1,0 +1,44 @@
+model:
+  temperature: 0
+
+priority_thresholds:
+  urgent:
+    sentiment_score: -0.70
+    escalation_keyword_count: 2
+  high:
+    sentiment_score: -0.50
+    escalation_keyword_count: 1
+  medium:
+    sentiment_score: 0.0
+
+department_mappings:
+  technical:
+    - technical_support
+    - escalation_team
+  billing:
+    - billing_support
+    - escalation_team
+  general:
+    - customer_success
+  account:
+    - customer_success
+    - billing_support
+  feature_request:
+    - product_team
+
+rag:
+  top_k: 3
+  chunk_size: 500
+  chunk_overlap: 50
+  embedding_dimensions: 384
+  persist_directory: "chroma_db"
+  collection_name: "support_policy_faq"
+  groundedness_threshold: 0.78
+  confidence_threshold: 0.75
+  max_refinement_attempts: 1
+
+hitl:
+  max_revision_cycles: 1
+
+audit:
+  sqlite_path: "audit/audit.db"
