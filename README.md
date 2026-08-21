@@ -2,78 +2,29 @@
 
 ```mermaid
 flowchart TD
-    A[Ticket In<br/>Synthetic Ticket Queue] --> B[Ticket Intake Node<br/>Initialize State + Thread Memory]
+    A[Ticket In] --> B[Sentiment + Policy Check]
 
-    B --> C[Sentiment & Classification Agent]
-    C --> C1[VADER Sentiment Tool<br/>Local / No LLM Tokens]
-    C1 --> C2[Ticket Category Classification<br/>technical / billing / account / general / feature_request]
+    B --> C[RAG Answer Draft]
 
-    C2 --> D[Policy Agent]
-    D --> D1[Retrieve Policy / FAQ Chunks from Chroma]
-    D1 --> D2{Relevant Policy Found?}
+    C --> D[Route Decision]
 
-    D2 -- No --> E1[Escalate<br/>Do Not Fabricate Policy]
-    D2 -- Yes --> D3{Safety Policy Match?}
+    D -->|Auto-Resolve| E[Prepare Draft]
+    D -->|Escalate| E
+    D -->|Refuse| E
+    D -->|Ask More Info| E
 
-    D3 -- Refund Abuse --> E2[Refuse<br/>Scripted Polite Response]
-    D3 -- Abusive Content Request --> E2
-    D3 -- No Prohibited Request --> F[Department Router]
+    E --> F[Confidence / Groundedness Check]
 
-    F --> G[RAG Agent]
-    G --> G1[Build Retrieval Query]
-    G1 --> G2[Chroma Similarity Search]
-    G2 --> G3[Top-K Policy / FAQ Chunks]
-    G3 --> G4[RAG Answer Draft<br/>Grounded in KB Only]
+    F -->|Pass| G[Human Approval]
 
-    G4 --> H[LangGraph Triage Agent]
-    H --> I{Route Decision}
+    F -->|Fail| H[Refine Retrieval]
+    H --> C
 
-    I -->|Auto-Resolve| I1[Auto-Resolve Draft]
-    I -->|Escalate| I2[Escalation Draft]
-    I -->|Refuse| I3[Scripted Refusal Draft]
-    I -->|Ask More Info| I4[Ask-for-Information Draft]
+    G -->|Approve| I[Audit Log]
+    G -->|Edit / Reject| J[Revise Draft]
+    J --> F
 
-    E1 --> I2
-    E2 --> I3
-
-    I1 --> J[Groundedness & Confidence Evaluator]
-    I2 --> J
-    I3 --> J
-    I4 --> J
-
-    J --> K{Grounded + Confident?}
-    K -- Yes --> L[HITL Approval Gate]
-    K -- No --> M{More Retrieval Could Help?}
-
-    M -- Yes --> N{Refinement Attempts<br/>Below Limit?}
-    N -- Yes --> O[Retrieval Query Refiner]
-    O --> G
-    N -- No --> P[Force Escalation]
-    M -- No --> P
-    P --> L
-
-    L --> Q{Human Decision}
-    Q -->|Approve| R[Approved Draft<br/>Never Auto-Sent]
-    Q -->|Edit| S[Human-Edited Draft]
-    S --> J
-    Q -->|Reject| T{Revision Cycles<br/>Below Limit?}
-    T -- Yes --> U[Revision Agent<br/>Use Human Feedback + KB]
-    U --> J
-    T -- No --> V[Escalate for Manual Handling]
-    V --> W[Audit Log]
-    R --> W
-
-    W --> X[(SQLite Audit DB)]
-    W --> Y[END]
-
-    B -. thread_id .-> Z[(LangGraph Checkpointer<br/>Conversation Memory)]
-    Z -. restores thread state .-> B
-
-    AA[(Markdown Policy / FAQ KB)] --> AB[Document Loader + Chunker]
-    AB --> AC[Local Hashing Embeddings]
-    AC --> AD[(Chroma Vector Store)]
-    AD --> D1
-    AD --> G2
+    I --> K[END]
 ```
 
 ## End-to-End Flow
